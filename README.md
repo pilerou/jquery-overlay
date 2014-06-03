@@ -21,7 +21,8 @@ Each `strategy` MUST have `match` and `css` properties.
 ```js
 strategy = {
   match: matchObject,
-  css: cssObject
+  css: cssObject,
+  manageMatchTexts: manageMatchTextsFunction // Optional
 };
 ```
 
@@ -39,6 +40,16 @@ matchObject = /\B@\w+/g; // every words start with @ match
 cssObject = {
   'background-color': 'glay',
   color: 'red'  // ignored
+};
+```
+
+`manageMatchTextsFunction` MUST be a Function.
+It works as a callback function in order to manage the substrings that match the pattern.
+
+```js
+cssObject = function(matchesArray){
+     console.log(matchesArray);
+     // Manage all you want with this array
 };
 ```
 

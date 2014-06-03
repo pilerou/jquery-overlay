@@ -11,6 +11,20 @@
   'use strict';
 
   /**
+   * Bind the func to the context.
+   */
+  var bind = function (func, context) {
+    if (func.bind) {
+      // Use native Function#bind if it's available.
+      return func.bind(context);
+    } else {
+      return function () {
+        func.apply(context, arguments);
+      };
+    }
+  };
+
+  /**
    * Get the styles of any element from property names.
    */
   var getStyles = (function () {
@@ -111,7 +125,7 @@
       'background-color'
     ];
 
-    function Overlay($textarea) {
+    function Overlay($textarea, strategies) {
       var $wrapper, position;
 
       // Setup wrapper element
@@ -143,17 +157,18 @@
       // Intercept val method
       // Note that jQuery.fn.val does not trigger any event.
       this.$textarea.origVal = $textarea.val;
-      this.$textarea.val = $.proxy(this.val, this);
+      this.$textarea.val = bind(this.val, this);
 
       // Bind event handlers
-      this.$textarea.on({
-        'input.overlay':  $.proxy(this.onInput,       this),
-        'change.overlay': $.proxy(this.onInput,       this),
-        'scroll.overlay': $.proxy(this.resizeOverlay, this),
-        'resize.overlay': $.proxy(this.resizeOverlay, this)
-      });
+      this.$textarea.on('input', bind(this.onInput, this));
+      this.$textarea.on('change', bind(this.onInput, this));
+      this.$textarea.on('scroll', bind(this.resizeOverlay, this));
+      this.$textarea.on('resize', bind(this.resizeOverlay, this));
 
-      this.strategies = [];
+      // Strategies must be an array
+      this.strategies = $.isArray(strategies) ? strategies : [strategies];
+
+      this.renderTextOnOverlay();
     }
 
     $.extend(Overlay.prototype, {
@@ -172,9 +187,9 @@
       },
 
       renderTextOnOverlay: function () {
-        var text, i, l, strategy, match, style;
+        var text, i, l, strategy, match, style, matchesArray;
         text = escape(this.$textarea.val());
-
+        matchesArray=[];
         // Apply all strategies
         for (i = 0, l = this.strategies.length; i < l; i++) {
           strategy = this.strategies[i];
@@ -190,8 +205,14 @@
           style = 'background-color:' + strategy.css['background-color'];
 
           text = text.replace(match, function (str) {
+            matchesArray.push(str);
             return '<span style="' + style + '">' + str + '</span>';
           });
+
+          if(strategy.manageMatchesArray) {
+              strategy.manageMatchesArray(matchesArray);
+          }
+
         }
         this.$el.html(text);
         return this;
@@ -199,21 +220,6 @@
 
       resizeOverlay: function () {
         this.$el.css({ top: this.textareaTop - this.$textarea.scrollTop() });
-      },
-
-      register: function (strategies) {
-        strategies = $.isArray(strategies) ? strategies : [strategies];
-        this.strategies = this.strategies.concat(strategies);
-        return this.renderTextOnOverlay();
-      },
-
-      destroy: function () {
-        var $wrapper;
-        this.$textarea.off('.overlay');
-        $wrapper = this.$textarea.parent();
-        $wrapper.after(this.$textarea).remove();
-        this.$textarea.data('overlay', void 0);
-        this.$textarea = null;
       }
     });
 
@@ -221,27 +227,9 @@
 
   })();
 
-  $.fn.overlay = function (strategies) {
-    var dataKey;
-    dataKey = 'overlay';
-
-    if (strategies === 'destroy') {
-      return this.each(function () {
-        var overlay = $(this).data(dataKey);
-        if (overlay) { overlay.destroy(); }
-      });
-    }
-
-    return this.each(function () {
-      var $this, overlay;
-      $this = $(this);
-      overlay = $this.data(dataKey);
-      if (!overlay) {
-        overlay = new Overlay($this);
-        $this.data(dataKey, overlay);
-      }
-      overlay.register(strategies);
-    });
+  $.fn.overlay = function (options) {
+    new Overlay(this, options);
+    return this;
   };
 
 })(window.jQuery);
