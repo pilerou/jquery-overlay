@@ -209,8 +209,8 @@
                         return '<span style="' + style + '">' + str + '</span>';
                     });
 
-                    if(strategy.manageMatchesArray) {
-                        strategy.manageMatchesArray(matchesArray);
+                    if(strategy.manageMatchTexts) {
+                        strategy.manageMatchTexts(matchesArray);
                     }
 
                 }
