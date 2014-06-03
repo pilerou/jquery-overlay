@@ -47,7 +47,7 @@ cssObject = {
 It works as a callback function in order to manage the substrings that match the pattern.
 
 ```js
-cssObject = function(matchesArray){
+manageMatchTextsFunction = function(matchesArray){
      console.log(matchesArray);
      // Manage all you want with this array
 };
